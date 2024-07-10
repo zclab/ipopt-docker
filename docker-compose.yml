@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  flask-app:
+    image: ipopt-docker:v6
+    ports:
+      - "9200:5000"
+    environment:
+      - LANG=en_US.UTF-8
+      - LANGUAGE=en_US:en
+      - LC_ALL=en_US.UTF-8
+    volumes:
+      - .:/app
+    command: ["python", "app.py"]
