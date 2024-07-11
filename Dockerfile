@@ -4,8 +4,11 @@ FROM python:3.10
 # 设置环境变量以防止交互安装
 ENV DEBIAN_FRONTEND=noninteractive
 
-# 禁用 APT::Update::Post-Invoke 脚本
-RUN echo 'DPkg::Post-Invoke {"/bin/true";};' > /etc/apt/apt.conf.d/no-cache
+# 禁用所有 APT::Post-Invoke 脚本
+RUN echo 'APT::Update::Post-Invoke-Success { "touch /var/cache/apt/pkgcache.bin || true"; };' > /etc/apt/apt.conf.d/no-cache
+RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/archives/*.deb || true"; };' >> /etc/apt/apt.conf.d/no-cache
+RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/archives/partial/*.deb || true"; };' >> /etc/apt/apt.conf.d/no-cache
+RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/*.bin || true"; };' >> /etc/apt/apt.conf.d/no-cache
 
 # 更新包列表并安装必要的依赖
 RUN apt-get update && apt-get install -y \
@@ -20,6 +23,7 @@ RUN apt-get update && apt-get install -y \
     tzdata \
     libopenblas-dev \
     libatlas-base-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 设置时区（例如，Asia/Shanghai）
