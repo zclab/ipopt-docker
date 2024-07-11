@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # 使用 Ubuntu 18.04
+    runs-on: ubuntu-18.04  # 使用 Ubuntu 18.04
 
     steps:
       - name: Checkout repository
@@ -40,8 +40,10 @@ jobs:
             echo "tag=latest" >> $GITHUB_ENV
           elif [ "${GITHUB_EVENT_NAME}" == "pull_request" ]; then
             echo "tag=pr-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
           else
-            echo "tag=${{ steps.extract_tag.outputs.tag }}" >> $GITHUB_ENV
+            echo "tag=unknown" >> $GITHUB_ENV
 
       - name: Build Docker image
         if: github.event_name == 'pull_request'
