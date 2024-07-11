@@ -5,13 +5,12 @@ FROM python:3.10
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 禁用所有 APT::Post-Invoke 脚本
-RUN echo 'APT::Update::Post-Invoke-Success { "touch /var/cache/apt/pkgcache.bin || true"; };' > /etc/apt/apt.conf.d/no-cache
-RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/archives/*.deb || true"; };' >> /etc/apt/apt.conf.d/no-cache
-RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/archives/partial/*.deb || true"; };' >> /etc/apt/apt.conf.d/no-cache
-RUN echo 'DPkg::Post-Invoke { "rm -f /var/cache/apt/*.bin || true"; };' >> /etc/apt/apt.conf.d/no-cache
+RUN echo 'APT::Update::Post-Invoke-Success { "/bin/true"; };' > /etc/apt/apt.conf.d/99disable-cache-clean
+RUN echo 'APT::Update::Post-Invoke { "/bin/true"; };' >> /etc/apt/apt.conf.d/99disable-cache-clean
+RUN echo 'DPkg::Post-Invoke { "/bin/true"; };' >> /etc/apt/apt.conf.d/99disable-cache-clean
 
 # 更新包列表并安装必要的依赖
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     locales \
     g++ \
     gfortran \
