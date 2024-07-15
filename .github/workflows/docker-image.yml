@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - main  # 当代码推送到 main 分支时触发
+    tags:
+      - '*'  # 当有标签推送时触发
+  pull_request:
+    branches:
+      - main  # 当向 main 分支提交 PR 时触发
 
 jobs:
   build:
@@ -17,14 +22,42 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'  # 仅在非 PR 事件中执行
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Extract GitHub tag
+        id: extract_tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Set Docker image tag
+        id: image_tag
+        run: |
+          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
+              echo "tag=latest" >> $GITHUB_ENV
+          elif [ "${GITHUB_EVENT_NAME}" == "pull_request" ]; then
+              echo "tag=pr-1" >> $GITHUB_ENV
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+              echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          else
+              echo "tag=unknown" >> $GITHUB_ENV
+          fi
+
+      - name: Build Docker image
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v3
         with:
           context: .
-          push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ipopt-docker:latest
+          push: false  # 默认不推送
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ipopt-docker:${{ env.tag }}
+
+      - name: Build and push Docker image
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          push: true  # 推送镜像
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/ipopt-docker:${{ env.tag }}
